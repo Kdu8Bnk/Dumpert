@@ -28,3 +28,8 @@ You can use Visual Studio to compile it from source.
 ```
 
 The sRDI code can be found here: https://github.com/monoxgas/sRDI
+
+This Forked version contains a few slight modifications.
+- Avoid Windows Defender AV detection
+- Avoid McAfee AV detection on the dump files. More information here : https://www.bussink.net/lsass-minidump-file-seen-as-malicious-by-mcafee-av/
+
