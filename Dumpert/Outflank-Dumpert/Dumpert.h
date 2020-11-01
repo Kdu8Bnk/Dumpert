@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Windows.h>
+//FBK
+
 
 #define STATUS_SUCCESS 0
 #define OBJ_CASE_INSENSITIVE 0x00000040L
@@ -86,6 +88,12 @@ typedef struct _IO_STATUS_BLOCK
 	ULONG Information;
 } IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
 
+// FBK
+typedef VOID (NTAPI *PIO_APC_ROUTINE) (
+	IN PVOID ApcContext,
+	IN PIO_STATUS_BLOCK IoStatusBlock,
+	IN ULONG Reserved
+);
 
 // Windows 7 SP1 / Server 2008 R2 specific Syscalls
 EXTERN_C NTSTATUS NtAllocateVirtualMemory7SP1(HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect);
@@ -96,6 +104,7 @@ EXTERN_C NTSTATUS ZwWriteVirtualMemory7SP1(HANDLE hProcess, PVOID lpBaseAddress,
 EXTERN_C NTSTATUS ZwProtectVirtualMemory7SP1(IN HANDLE ProcessHandle, IN PVOID* BaseAddress, IN SIZE_T* NumberOfBytesToProtect, IN ULONG NewAccessProtection, OUT PULONG OldAccessProtection);
 EXTERN_C NTSTATUS WINAPI ZwQuerySystemInformation7SP1(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
 EXTERN_C NTSTATUS NtCreateFile7SP1(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, PLARGE_INTEGER AllocationSize, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PVOID EaBuffer, ULONG EaLength);
+
 
 // Windows 8 / Server 2012 specific Syscalls
 EXTERN_C NTSTATUS NtAllocateVirtualMemory80(HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect);
@@ -118,7 +127,6 @@ EXTERN_C NTSTATUS ZwProtectVirtualMemory81(IN HANDLE ProcessHandle, IN PVOID* Ba
 EXTERN_C NTSTATUS WINAPI ZwQuerySystemInformation81(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
 EXTERN_C NTSTATUS NtCreateFile81(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, PLARGE_INTEGER AllocationSize, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PVOID EaBuffer, ULONG EaLength);
 
-
 // Windows 10 / Server 2016 specific Syscalls
 EXTERN_C NTSTATUS NtAllocateVirtualMemory10(HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect);
 EXTERN_C NTSTATUS NtFreeVirtualMemory10(HANDLE ProcessHandle, PVOID *BaseAddress, IN OUT PSIZE_T RegionSize, ULONG FreeType);
@@ -128,6 +136,18 @@ EXTERN_C NTSTATUS ZwWriteVirtualMemory10(HANDLE hProcess, PVOID lpBaseAddress, P
 EXTERN_C NTSTATUS ZwProtectVirtualMemory10(IN HANDLE ProcessHandle, IN PVOID* BaseAddress, IN SIZE_T* NumberOfBytesToProtect, IN ULONG NewAccessProtection, OUT PULONG OldAccessProtection);
 EXTERN_C NTSTATUS WINAPI ZwQuerySystemInformation10(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
 EXTERN_C NTSTATUS NtCreateFile10(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, PLARGE_INTEGER AllocationSize, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PVOID EaBuffer, ULONG EaLength);
+
+//FBK
+EXTERN_C NTSTATUS NtReadFile7SP1(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE  ApcRoutine, PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER ByteOffset, PULONG Key);
+EXTERN_C NTSTATUS NtReadFile80(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE  ApcRoutine, PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER ByteOffset, PULONG Key);
+EXTERN_C NTSTATUS NtReadFile81(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE  ApcRoutine, PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER ByteOffset, PULONG Key);
+EXTERN_C NTSTATUS NtReadFile10(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE  ApcRoutine, PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER ByteOffset, PULONG Key);
+
+EXTERN_C NTSTATUS NtWriteFile7SP1(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER  ByteOffset, PULONG Key);
+EXTERN_C NTSTATUS NtWriteFile80(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER  ByteOffset, PULONG Key);
+EXTERN_C NTSTATUS NtWriteFile81(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER  ByteOffset, PULONG Key);
+EXTERN_C NTSTATUS NtWriteFile10(HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine,	PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock, PVOID Buffer, ULONG Length, PLARGE_INTEGER  ByteOffset, PULONG Key);
+
 
 NTSTATUS(*NtAllocateVirtualMemory)(
 	HANDLE ProcessHandle,
@@ -188,6 +208,31 @@ NTSTATUS(*NtCreateFile)(
 	PVOID EaBuffer,
 	ULONG EaLength
 	);
+
+NTSTATUS (*NtReadFile)(
+	HANDLE FileHandle,
+	HANDLE Event,
+	PIO_APC_ROUTINE ApcRoutine,
+	PVOID ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID Buffer,
+	ULONG Length,
+	PLARGE_INTEGER ByteOffset,
+	PULONG Key
+	);
+
+NTSTATUS (*NtWriteFile)(
+	HANDLE           FileHandle,
+	HANDLE           Event,
+	PIO_APC_ROUTINE  ApcRoutine,
+	PVOID            ApcContext,
+	PIO_STATUS_BLOCK IoStatusBlock,
+	PVOID            Buffer,
+	ULONG            Length,
+	PLARGE_INTEGER   ByteOffset,
+	PULONG           Key
+	);
+
 
 NTSTATUS(*ZwClose)(
 	IN HANDLE KeyHandle
