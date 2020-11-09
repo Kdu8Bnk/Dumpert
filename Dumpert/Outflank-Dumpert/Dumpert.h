@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Windows.h>
-//FBK
 
 
 #define STATUS_SUCCESS 0
@@ -252,3 +251,5 @@ typedef NTSYSAPI BOOLEAN(NTAPI *_RtlEqualUnicodeString)(
 	PCUNICODE_STRING String2,
 	BOOLEAN CaseInSensitive
 	);
+
+char* MyEncrypt(char* input, int key);
