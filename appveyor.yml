@@ -1,3 +1,11 @@
+version: 1.0.{build}
+configuration: Release
+platform: x64
+build:
+  project: /Dumpert/Outflank-Dumpert.sln
+  verbosity: minimal
+artifacts:
+- path: Dumpert\x64\Release\*.exe
 deploy:
   release: Dumpert-v$(APPVEYOR_BUILD_VERSION)
   description: 'Release description'
