@@ -33,3 +33,4 @@ This Forked version contains a few slight modifications.
 - Avoid Windows Defender AV detection
 - Avoid McAfee AV detection on the dump files. More information here : https://www.bussink.net/lsass-minidump-file-seen-as-malicious-by-mcafee-av/
 
+Build version with AppVeyor
